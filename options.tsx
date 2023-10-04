@@ -132,60 +132,69 @@ function IndexOptions() {
   }
 
   const handleLoginWithGoogle_oauth_2 = async () => {
-    const manifest = chrome.runtime.getManifest()
+    // https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow#redirecting
+    try {
+      const manifest = chrome.runtime.getManifest()
 
-    const url = new URL("https://accounts.google.com/o/oauth2/auth")
-    const redirectUri = chrome.identity.getRedirectURL("supabase-auth")
-    console.log(`redirectUri`, redirectUri)
-    // -> https://dekkcnhhmkcahchnaphlibnodmigphnc.chromiumapp.org/supabase-auth
-    // save on google cloud console > credentials > OAuth 2.0 Client IDs > Web client
-    // save on supabase > Authentication > URL Configuration > Redirect URLs
-    // scopes on manifest - only ["openid", "email", "profile"]
+      const url = new URL("https://accounts.google.com/o/oauth2/auth")
+      const redirectUri = chrome.identity.getRedirectURL("supabase-auth")
+      console.log(`redirectUri`, redirectUri)
+      // -> https://dekkcnhhmkcahchnaphlibnodmigphnc.chromiumapp.org/supabase-auth
+      // save on google cloud console > credentials > OAuth 2.0 Client IDs > Web client
+      // save on supabase > Authentication > URL Configuration > Redirect URLs
+      // scopes on manifest - only ["openid", "email", "profile"]
 
-    url.searchParams.set("client_id", manifest.oauth2.client_id)
-    url.searchParams.set("response_type", "id_token")
-    url.searchParams.set("access_type", "offline")
-    url.searchParams.set("redirect_uri", redirectUri)
-    url.searchParams.set("scope", manifest.oauth2.scopes.join(" "))
+      url.searchParams.set("client_id", manifest.oauth2.client_id)
+      url.searchParams.set("response_type", "token")
+      url.searchParams.set("redirect_uri", redirectUri)
+      url.searchParams.set("scope", manifest.oauth2.scopes.join(" "))
 
-    console.log(`url`, url)
+      console.log(`url`, url)
 
-    console.log(`url.href`, url.href)
+      chrome.identity.launchWebAuthFlow(
+        {
+          url: url.href,
+          interactive: true
+        },
+        async (redirectedTo) => {
+          if (chrome.runtime.lastError) {
+            // auth was not successful
+            console.log("There was an error with the authentication")
+            throw new Error(chrome.runtime.lastError.message)
+          } else {
+            console.log("auth was successful")
+            console.log(`redirectedTo`, redirectedTo)
 
-    chrome.identity.launchWebAuthFlow(
-      {
-        url: url.href,
-        interactive: true
-      },
-      async (redirectedTo) => {
-        if (chrome.runtime.lastError) {
-          // auth was not successful
-          console.log(
-            "There was an error with the authentication: ",
-            chrome.runtime.lastError.message
-          )
-        } else {
-          console.log("auth was successful")
-          console.log(`redirectedTo`, redirectedTo)
+            // auth was successful, extract the ID token from the redirectedTo URL
+            const url = new URL(redirectedTo)
+            const params = new URLSearchParams(url.hash.replace("#", ""))
+            const access_token = params.get("access_token")
 
-          // auth was successful, extract the ID token from the redirectedTo URL
-          const url = new URL(redirectedTo)
-          const params = new URLSearchParams(url.hash.replace("#", ""))
-          const token = params.get("id_token")
+            console.log(`auth was successful - url`, url)
+            console.log(`auth was successful - access_token`, access_token)
 
-          console.log(`auth was successful - url`, url)
-          console.log(`auth was successful - token`, token)
+            // ─────────────────────────────────────
 
-          const { data, error } = await supabase.auth.signInWithIdToken({
-            provider: "google",
-            token
-          })
+            // const {
+            //   data: signInWithIdToken_data,
+            //   error: signInWithIdToken_error
+            // } = await supabase.auth.signInWithIdToken({
+            //   provider: "google",
+            //   token: access_token
+            // })
+            // if (signInWithIdToken_error) throw { signInWithIdToken_error }
 
-          console.log(`error`, error)
-          console.log(`data`, data)
+            // console.log(`signInWithIdToken_data`, signInWithIdToken_data)
+
+            // ─────────────────────────────────────
+
+            await testYoutubeApiWithToken({ auth_token: access_token })
+          }
         }
-      }
-    )
+      )
+    } catch (error) {
+      console.error(`error-handleLoginWithGoogle_oauth_2`, error)
+    }
   }
 
   return (
