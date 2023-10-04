@@ -83,51 +83,22 @@ function IndexOptions() {
     })
   }
 
-  // code from guide (not working) -> https://supabase.com/docs/guides/auth/social-login/auth-google#using-native-sign-in-for-chrome-extensions
-  const handleLoginWithGoogle_1 = async () => {
-    const manifest = chrome.runtime.getManifest()
+  const testYoutubeApiWithToken = async ({
+    auth_token
+  }: {
+    auth_token: string
+  }) => {
+    // video id from the same user than the one logged in
+    const { data: getYoutubeVideoInfo_data, error: getYoutubeVideoInfo_error } =
+      await getYoutubeVideoInfo({ auth_token, video_id: "LSqzQsBL6r8" })
+    if (getYoutubeVideoInfo_error) throw { getYoutubeVideoInfo_error }
+    // ERROR -> "Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project."
+    // It's seems that the token from auth/v1 is not valid for the youtube api (need for a OAuth 2 access token)
 
-    const url = new URL("https://accounts.google.com/o/oauth2/auth")
-
-    url.searchParams.set("client_id", manifest.oauth2.client_id)
-    url.searchParams.set("response_type", "id_token")
-    url.searchParams.set("access_type", "offline")
-    url.searchParams.set(
-      "redirect_uri",
-      `https://${chrome.runtime.id}.chromiumapp.org`
-    )
-    url.searchParams.set("scope", manifest.oauth2.scopes.join(" "))
-
-    chrome.identity.launchWebAuthFlow(
-      {
-        url: url.href,
-        interactive: true
-      },
-      async (redirectedTo) => {
-        if (chrome.runtime.lastError) {
-          // auth was not successful
-          console.log(
-            "There was an error with the authentication: ",
-            chrome.runtime.lastError.message
-          )
-        } else {
-          // auth was successful, extract the ID token from the redirectedTo URL
-          const url = new URL(redirectedTo)
-          const params = new URLSearchParams(url.hash)
-
-          const { data, error } = await supabase.auth.signInWithIdToken({
-            provider: "google",
-            token: params.get("id_token")
-          })
-
-          console.log(`error`, error)
-          console.log(`data`, data)
-        }
-      }
-    )
+    console.log(`getYoutubeVideoInfo_data`, getYoutubeVideoInfo_data)
   }
 
-  const handleLoginWithGoogle_2 = async () => {
+  const handleLoginWithGoogle_auth_v1 = async () => {
     try {
       // NOTE: add this to your supabase auth redirect URLs list (Authentication > URL Configuration > Redirect URLs)
       const redirectUri = chrome.identity.getRedirectURL("supabase-auth")
@@ -155,22 +126,66 @@ function IndexOptions() {
 
       const session = setSession_result.data.session
       console.log(`session`, session)
-
-      const {
-        data: getYoutubeVideoInfo_data,
-        error: getYoutubeVideoInfo_error
-      } = await getYoutubeVideoInfo({
-        auth_token: session.access_token,
-        video_id: "LSqzQsBL6r8" // video id from the same user than the one logged in
-      })
-      if (getYoutubeVideoInfo_error) throw { getYoutubeVideoInfo_error }
-      // ERROR -> "Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project."
-      // It's seems that the token from auth/v1 is not valid for the youtube api (need for a OAuth 2 access token)
-
-      console.log(`getYoutubeVideoInfo_data`, getYoutubeVideoInfo_data)
     } catch (error) {
       console.error(`error`, error)
     }
+  }
+
+  const handleLoginWithGoogle_oauth_2 = async () => {
+    const manifest = chrome.runtime.getManifest()
+
+    const url = new URL("https://accounts.google.com/o/oauth2/auth")
+    const redirectUri = chrome.identity.getRedirectURL("supabase-auth")
+    console.log(`redirectUri`, redirectUri)
+    // -> https://dekkcnhhmkcahchnaphlibnodmigphnc.chromiumapp.org/supabase-auth
+    // save on google cloud console > credentials > OAuth 2.0 Client IDs > Web client
+    // save on supabase > Authentication > URL Configuration > Redirect URLs
+    // scopes on manifest - only ["openid", "email", "profile"]
+
+    url.searchParams.set("client_id", manifest.oauth2.client_id)
+    url.searchParams.set("response_type", "id_token")
+    url.searchParams.set("access_type", "offline")
+    url.searchParams.set("redirect_uri", redirectUri)
+    url.searchParams.set("scope", manifest.oauth2.scopes.join(" "))
+
+    console.log(`url`, url)
+
+    console.log(`url.href`, url.href)
+
+    chrome.identity.launchWebAuthFlow(
+      {
+        url: url.href,
+        interactive: true
+      },
+      async (redirectedTo) => {
+        if (chrome.runtime.lastError) {
+          // auth was not successful
+          console.log(
+            "There was an error with the authentication: ",
+            chrome.runtime.lastError.message
+          )
+        } else {
+          console.log("auth was successful")
+          console.log(`redirectedTo`, redirectedTo)
+
+          // auth was successful, extract the ID token from the redirectedTo URL
+          const url = new URL(redirectedTo)
+          const params = new URLSearchParams(url.hash.replace("#", ""))
+          const token = params.get("id_token")
+
+          console.log(`auth was successful - url`, url)
+          console.log(`auth was successful - token`, token)
+
+          const { data, error } = await supabase.auth.signInWithIdToken({
+            provider: "google",
+            token
+          })
+
+          console.log(`error`, error)
+          console.log(`data`, data)
+        }
+      }
+    )
   }
 
   return (
@@ -244,7 +259,7 @@ function IndexOptions() {
 
             <button
               onClick={(e) => {
-                handleLoginWithGoogle_2()
+                handleLoginWithGoogle_oauth_2()
               }}>
               Sign in with Google
             </button>
