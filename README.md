@@ -1,0 +1,1 @@
+# plasmo-supabase-boilerplate
