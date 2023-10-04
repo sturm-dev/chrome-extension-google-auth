@@ -1,4 +1,10 @@
-# readme
+# chrome-extension-google-auth
+
+> an example of google authentication in a chrome extension using [supabase](https://supabase.com/) and [plasmo](https://www.plasmo.com/)
+
+- you get
+  - access_token for later using google api
+  - id_token for log-in with supabase
 
 video of working example:
 
