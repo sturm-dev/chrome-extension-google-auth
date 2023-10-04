@@ -53,7 +53,8 @@
       "scopes": [
         "openid",
         "email",
-        "profile"
+        "profile",
+        "https://www.googleapis.com/auth/youtube.readonly"
       ]
     }
   }

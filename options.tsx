@@ -7,6 +7,7 @@ import { Storage } from "@plasmohq/storage"
 import { useStorage } from "@plasmohq/storage/hook"
 
 import { supabase } from "~core/supabase"
+import { getYoutubeVideoInfo } from "~get-youtube-video-info"
 
 function IndexOptions() {
   const [user, setUser] = useStorage<User>({
@@ -153,8 +154,20 @@ function IndexOptions() {
       })
 
       const session = setSession_result.data.session
-
       console.log(`session`, session)
+
+      const {
+        data: getYoutubeVideoInfo_data,
+        error: getYoutubeVideoInfo_error
+      } = await getYoutubeVideoInfo({
+        auth_token: session.access_token,
+        video_id: "LSqzQsBL6r8" // video id from the same user than the one logged in
+      })
+      if (getYoutubeVideoInfo_error) throw { getYoutubeVideoInfo_error }
+      // ERROR -> "Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project."
+      // It's seems that the token from auth/v1 is not valid for the youtube api (need for a OAuth 2 access token)
+
+      console.log(`getYoutubeVideoInfo_data`, getYoutubeVideoInfo_data)
     } catch (error) {
       console.error(`error`, error)
     }
