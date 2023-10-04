@@ -43,6 +43,17 @@
           "$CRX_ID"
         ]
       }
-    ]
+    ],
+    "permissions": [
+      "identity"
+    ],
+    "oauth2": {
+      "client_id": "979664502650-7m4kt2f3bmnvsar29dmo82rldsqf23cp.apps.googleusercontent.com",
+      "scopes": [
+        "openid",
+        "email",
+        "profile"
+      ]
+    }
   }
 }
