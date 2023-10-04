@@ -10,12 +10,13 @@
     "package": "plasmo package"
   },
   "dependencies": {
+    "@plasmohq/messaging": "0.5.0",
+    "@plasmohq/storage": "1.8.0",
     "@supabase/supabase-js": "2.33.1",
     "plasmo": "0.83.0",
+    "qs": "^6.11.2",
     "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "@plasmohq/storage": "1.8.0",
-    "@plasmohq/messaging": "0.5.0"
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "4.1.0",
@@ -48,7 +49,7 @@
       "identity"
     ],
     "oauth2": {
-      "client_id": "979664502650-7m4kt2f3bmnvsar29dmo82rldsqf23cp.apps.googleusercontent.com",
+      "client_id": "979664502650-kbtfn19f35jecsoq48kb40kps6piojjr.apps.googleusercontent.com",
       "scopes": [
         "openid",
         "email",

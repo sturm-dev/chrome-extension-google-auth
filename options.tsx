@@ -1,4 +1,5 @@
 import type { Provider, User } from "@supabase/supabase-js"
+import qs from "qs"
 import { useEffect, useState } from "react"
 
 import { sendToBackground } from "@plasmohq/messaging"
@@ -81,7 +82,8 @@ function IndexOptions() {
     })
   }
 
-  const handleLoginWithGoogle = async () => {
+  // code from guide (not working) -> https://supabase.com/docs/guides/auth/social-login/auth-google#using-native-sign-in-for-chrome-extensions
+  const handleLoginWithGoogle_1 = async () => {
     const manifest = chrome.runtime.getManifest()
 
     const url = new URL("https://accounts.google.com/o/oauth2/auth")
@@ -94,8 +96,6 @@ function IndexOptions() {
       `https://${chrome.runtime.id}.chromiumapp.org`
     )
     url.searchParams.set("scope", manifest.oauth2.scopes.join(" "))
-
-    console.log(`url`, url)
 
     chrome.identity.launchWebAuthFlow(
       {
@@ -124,6 +124,40 @@ function IndexOptions() {
         }
       }
     )
+  }
+
+  const handleLoginWithGoogle_2 = async () => {
+    try {
+      // NOTE: add this to your supabase auth redirect URLs list (Authentication > URL Configuration > Redirect URLs)
+      const redirectUri = chrome.identity.getRedirectURL("supabase-auth")
+      const options = { provider: "google", redirect_to: redirectUri }
+      const url = `${
+        process.env.PLASMO_PUBLIC_SUPABASE_URL
+      }/auth/v1/authorize?${qs.stringify(options)}`
+
+      const authorizeResult: string = await new Promise((resolve) => {
+        chrome.identity.launchWebAuthFlow(
+          { url, interactive: true },
+          (callbackUrl) => resolve(callbackUrl)
+        )
+      })
+      if (!authorizeResult) throw { error: "No authorizeResult" }
+
+      const { access_token, refresh_token } = qs.parse(
+        authorizeResult?.split("#")[1]
+      )
+
+      const setSession_result = await supabase.auth.setSession({
+        access_token,
+        refresh_token
+      })
+
+      const session = setSession_result.data.session
+
+      console.log(`session`, session)
+    } catch (error) {
+      console.error(`error`, error)
+    }
   }
 
   return (
@@ -197,7 +231,7 @@ function IndexOptions() {
 
             <button
               onClick={(e) => {
-                handleLoginWithGoogle()
+                handleLoginWithGoogle_2()
               }}>
               Sign in with Google
             </button>
