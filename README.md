@@ -1,10 +1,12 @@
 # chrome-extension-google-auth
 
-> an example of google authentication in a chrome extension using [supabase](https://supabase.com/) and [plasmo](https://www.plasmo.com/)
+as this issue appears [Error 400: invalid_request - Custom URI scheme is not supported on Chrome apps.](https://github.com/GoogleChrome/developer.chrome.com/issues/7434) I made this example of get the `access_token` using `chrome.identity.launchWebAuthFlow` instead of the old `chrome.identity.getAuthToken` that not work anymore in chrome extensions
 
 - you get
   - access_token for later using google api
   - id_token for log-in with supabase
+ 
+> the use of `supabase` is optional and is useful as a example of get the id_token for auth purposes
 
 video of working example:
 
